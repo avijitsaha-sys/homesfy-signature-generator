@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Homesfy — Signature Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--accent:#059B5B;--width:920px;--panel-gap:20px;font-family: 'Open Sans', Arial, sans-serif;}
+  body{font-family:var(--font, 'Open Sans'), Arial, sans-serif;margin:18px;background:#f6f7f9;color:#111;}
+  .container{max-width:var(--width);margin:0 auto;display:flex;gap:var(--panel-gap);align-items:flex-start;}
+  .card{background:#fff;border-radius:10px;box-shadow:0 6px 20px rgba(16,24,40,0.06);padding:18px;flex:1;}
+  .form-col{flex:0 0 360px;}
+  h1{font-size:18px;margin:0 0 12px;}
+  label{display:block;font-size:13px;margin:10px 0 6px;color:#333;font-weight:600;}
+  input[type="text"], select{width:100%;padding:10px;border-radius:8px;border:1px solid #e3e6ea;font-size:14px;box-sizing:border-box;}
+  .actions{display:flex;gap:10px;margin-top:12px;}
+  .btn{background:var(--accent);border:0;color:#fff;padding:10px 14px;border-radius:8px;font-weight:700;cursor:pointer;}
+  .btn.secondary{background:#eef7f3;color:#045c36;font-weight:700;border:1px solid #dff2e9;}
+  .preview-col{flex:1;min-width:420px;}
+  .preview-wrap{background:#fafafa;padding:14px;border-radius:8px;border:1px dashed #e6eef0;min-height:260px;}
+  .note{font-size:13px;color:#556;text-align:left;margin-top:8px;}
+  .copy-status{font-size:13px;color:#0a0;margin-left:8px;}
+  pre{white-space:pre-wrap;word-break:break-word;background:#0f1720;color:#e6fffb;padding:12px;border-radius:8px;font-size:12px;overflow:auto;max-height:260px;}
+  /* Signature styling (kept close to original) */
+  .sig{width:100%;max-width:600px;overflow:hidden;background:#fff;}
+  .sig table{border-collapse:collapse;width:100%;}
+  .sig .logo img{width:100%;max-width:120px;border-radius:4px;}
+  .sig .divider{background:var(--accent);width:3px;height:70px;border-radius:5px;margin:0 auto;}
+  .sig .name{color:var(--accent);font-weight:700;text-transform:uppercase;font-size:1.05em;}
+  .sig .designation{color:#000;font-size:0.98em;}
+  .sig .company{font-weight:700;color:#000;font-size:0.98em;}
+  .sig .icons img{width:17px;height:auto;display:inline-block;margin-right:6px;vertical-align:middle;}
+  .sig a{color:#000;text-decoration:none;}
+  .sig .banner img{width:100%;border-radius:8px;margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card form-col">
+    <h1>Signature Generator — Homesfy</h1>
+    <div class="note">Fill in the fields and the live preview (right) will update. Click <strong>Copy HTML Code</strong> to copy the ready-to-use signature HTML.</div>
+
+    <label for="fullName">Full name</label>
+    <input id="fullName" placeholder="e.g. Avijit Saha" type="text" />
+
+    <label for="designation">Designation</label>
+    <input id="designation" placeholder="e.g. Designer" type="text" />
+
+    <label for="phone">Mobile number</label>
+    <input id="phone" placeholder="+91 99xxxx" type="text" />
+
+    <label for="office">Office (select city)</label>
+    <select id="office">
+      <option value="">— choose city —</option>
+      <option value="Thane">Thane</option>
+      <option value="Pune">Pune</option>
+      <option value="Bangalore">Bangalore</option>
+      <option value="Western Mumbai">Western Mumbai</option>
+      <option value="Noida">Noida</option>
+      <option value="Vikhroli">Vikhroli</option>
+      <option value="Hyderabad">Hyderabad</option>
+      <option value="Central Mumbai">Central Mumbai</option>
+      <option value="Navi Mumbai">Navi Mumbai</option>
+    </select>
+
+    <div class="actions">
+      <button id="copyBtn" class="btn">Copy HTML Code</button>
+      <button id="downloadBtn" class="btn secondary">Download HTML File</button>
+      <span id="status" class="copy-status" aria-live="polite"></span>
+    </div>
+
+    <div style="margin-top:14px;">
+      <label>Generated signature HTML (preview)</label>
+      <pre id="codePreview" aria-hidden="true"></pre>
+    </div>
+
+  </div>
+
+  <div class="card preview-col">
+    <h1 style="margin-bottom:6px;">Live preview</h1>
+    <div class="preview-wrap" id="previewWrap">
+      <!-- signature preview will be injected here -->
+      <div id="sigPreview" class="sig" role="region" aria-label="signature preview">
+        <!-- initial default content -->
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:12px;">
+      Tip: After copying the HTML, paste it into your email client's signature HTML editor. If your client doesn't accept external fonts, it's fine — it will fall back to system fonts.
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Office address map
+const addresses = {
+  "Thane": "1602, Dev Corpora, Cadbury Junction, Thane (W) 400601",
+  "Pune": "706, Icon tower, 7th floor, Baner Road, Opposite KFC, near DMart, Pune - 411045",
+  "Bangalore": "24, Myworkarea, Benaka Complex, 2nd Cross, Sirur Park Road, Sheshadripuram, Bangalore - 560020",
+  "Western Mumbai": "304, Omkar, The Summit Bay, Chakala, Adjacent to Cinemax, Andheri West, Mumbai - 400069",
+  "Noida": "415 - Tower -1 Assotech Business Park Sector 135, Noida, Uttar Pradesh - 201304",
+  "Vikhroli": "2nd Floor, KAILASH BUSINESS PARK, Park Site Rd, HMPL Surya Nagar, Vikhroli West, Mumbai, Maharashtra 400079",
+  "Hyderabad": "Manjeera Majestic Commercial, 8th Floor, Kukatpally Housing Board Colony, Kukatpally, Hyderabad, Telengana - 509072",
+  "Central Mumbai": "Homesfy Realty Ltd, Park Site Road, Vikhroli West, Surya Nagar, Mumbai - 400070",
+  "Navi Mumbai": "Inspire Co-spaces, 7th Floor, Mayuresh Square, Plot No. 17, Sector-15, CBD Belapur, Navi Mumbai - 400614"
+};
+
+// --- Asset URLs (kept from user's original file)
+const ASSETS = {
+  logo: "https://imgur.com/eqylo9U.png",
+  phoneIcon: "https://imgur.com/GRrI2Qc.png",
+  fb: "https://imgur.com/PMC9gSf.png",
+  li: "https://imgur.com/jkLH2Hj.png",
+  yt: "https://imgur.com/KNvFAsc.png",
+  ig: "https://imgur.com/Mr2fXy4.png",
+  tw: "https://imgur.com/g0I8IRj.png",
+  loc: "https://imgur.com/Sg5MdQn.png",
+  banner: "https://imgur.com/xtVYU2Y.gif"
+};
+
+// --- DOM refs
+const fullName = document.getElementById('fullName');
+const designation = document.getElementById('designation');
+const phone = document.getElementById('phone');
+const office = document.getElementById('office');
+const sigPreview = document.getElementById('sigPreview');
+const codePreview = document.getElementById('codePreview');
+const status = document.getElementById('status');
+const copyBtn = document.getElementById('copyBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+
+// Helper: escape HTML for embedding in pre
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Build signature HTML (the code that will be copied)
+function buildSignatureHTML(){
+  const name = (fullName.value || "Your Name").trim();
+  const des = (designation.value || "Designation").trim();
+  const ph = (phone.value || "").trim();
+  const city = office.value || "";
+  const addr = addresses[city] || "415 - Tower -1 Assotech Business Park Sector 135, Noida, Uttar Pradesh - 201304";
+
+  // Use the original signature table structure (simplified for email compatibility)
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="width:400px;margin:0;padding:0;">
+  <div style="width:100%;overflow:hidden;">
+    <table width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
+      <tr>
+        <td width="32%" style="text-align:center;"><img src="${ASSETS.logo}" alt="homesfy" style="width:100%;max-width:120px;"></td>
+        <td width="3%" style="text-align:center;"><div style="background-color: ${'${accent}'? 'var(--accent)' : '#059B5B'}; width:3px; height:70px; margin:0 auto; border-radius:5px;"></div></td>
+        <td width="65%">
+          <table width="90%" style="border-collapse:collapse; margin-left:10px;" cellspacing="0" cellpadding="0">
+            <tr><td colspan="2" style="color:#059B5B; font-family: 'Open Sans', sans-serif; font-weight:bold; font-size:1.1em; padding-top:10px; text-transform:uppercase;">${name}</td></tr>
+            <tr><td colspan="2" style="color:#000000; font-family: 'Open Sans', sans-serif; font-size:1.0em;">${des}</td></tr>
+            <tr><td colspan="2" style="color:#000000; font-family: 'Open Sans', sans-serif; font-size:1.0em; font-weight:bold;">Homesfy Realty Ltd.</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div style="width:100%;margin:10px 0;overflow:hidden;"><hr style="background:#059B5B;width:100%;border:none;height:2px;"></div>
+
+  <div style="width:100%;overflow:hidden;">
+    <table width="100%" cellspacing="0" cellpadding="0" border="0" style="border-collapse:collapse;">
+      <tr>
+        <td width="35%" style="padding:0;">
+          <table border="0" cellspacing="0">
+            <tr>
+              <td width="20%" style="text-align:center;"><img src="${ASSETS.phoneIcon}" alt="call" style="width:15px;"></td>
+              <td colspan="4" width="80%" style="text-align:center; font-family: 'Open Sans', sans-serif; font-size:.7rem;"><a href="tel:${ph.replace(/\\s+/g,'')}" style="text-decoration:none; color:#000000;">${ph}</a></td>
+            </tr>
+            <tr>
+              <td style="width:20%; text-align:center;"><a href="https://www.facebook.com/homesfy"><img src="${ASSETS.fb}" alt="fb" style="width:17px;"></a></td>
+              <td style="width:20%; text-align:center;"><a href="https://www.linkedin.com/company/craft-property/"><img src="${ASSETS.li}" alt="li" style="width:17px;"></a></td>
+              <td style="width:20%; text-align:center;"><a href="https://www.youtube.com/@homesfy-realty-limited"><img src="${ASSETS.yt}" alt="yt" style="width:17px;"></a></td>
+              <td style="width:20%; text-align:center;"><a href="https://instagram.com/homesfyindia"><img src="${ASSETS.ig}" alt="ig" style="width:17px;"></a></td>
+              <td style="width:20%; text-align:center;"><a href="https://twitter.com/Homesfy1"><img src="${ASSETS.tw}" alt="tw" style="width:17px;"></a></td>
+            </tr>
+          </table>
+        </td>
+        <td width="65%" style="padding:0;">
+          <table border="0" cellspacing="0">
+            <tr>
+              <td width="10%" style="text-align:center;"><img src="${ASSETS.loc}" alt="location" style="width:17px;"></td>
+              <td width="80%" style="text-align:left; font-family: 'Open Sans', sans-serif; font-size:.7rem;"><a href="#" style="text-decoration:none; color:#000000;">${addr}</a></td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <div style="width:400px;overflow:hidden;margin-top:10px;"><table width="100%"><tr><td style="text-align:center;"><img src="${ASSETS.banner}" alt="" style="width:100%; border-radius:8px;"></td></tr></table></div>
+</body></html>`;
+
+  return html;
+}
+
+// Update preview and code block
+function refresh(){
+  const html = buildSignatureHTML();
+  // For preview, show only the inner signature body to keep it compact
+  // We will parse the HTML and extract body contents for the preview div
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const bodyContent = doc.body.innerHTML;
+  sigPreview.innerHTML = bodyContent;
+  // Update code preview (escaped)
+  codePreview.textContent = html;
+}
+
+// Event listeners
+[fullName, designation, phone, office].forEach(el=>el.addEventListener('input', refresh));
+office.addEventListener('change', refresh);
+
+// Copy HTML to clipboard (full document)
+copyBtn.addEventListener('click', async ()=>{
+  const html = buildSignatureHTML();
+  try{
+    await navigator.clipboard.writeText(html);
+    status.textContent = 'Copied ✓';
+    setTimeout(()=>status.textContent = '', 2200);
+  }catch(e){
+    // fallback: create textarea
+    const ta = document.createElement('textarea');
+    ta.value = html; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); status.textContent = 'Copied ✓'; }catch(e){ status.textContent = 'Copy failed — select manually.'; }
+    document.body.removeChild(ta);
+    setTimeout(()=>status.textContent = '', 2200);
+  }
+});
+
+// Download HTML file
+downloadBtn.addEventListener('click', ()=>{
+  const html = buildSignatureHTML();
+  const blob = new Blob([html], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'homesfy-signature.html';
+  document.body.appendChild(a); a.click();
+  URL.revokeObjectURL(url); document.body.removeChild(a);
+});
+
+// Initialize with example values
+fullName.value = "Avijit Saha";
+designation.value = "Designer";
+phone.value = "+91 90XXXXXXXX";
+office.value = "Thane";
+refresh();
+</script>
+</body>
+</html>
